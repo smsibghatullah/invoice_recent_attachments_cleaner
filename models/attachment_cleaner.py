@@ -1,4 +1,4 @@
-from odoo import models, fields, api
+from odoo import models, api
 from datetime import datetime, timedelta
 
 class AttachmentCleaner(models.Model):
@@ -6,23 +6,16 @@ class AttachmentCleaner(models.Model):
 
     @api.model
     def clean_old_invoice_attachments(self):
-        three_months_ago = datetime.today() - timedelta(days=100)
-
-        invoices = self.env['account.move'].search([
-            ('move_type', '=', 'out_invoice')
-        ])
-
-        attachment_model = self.env['ir.attachment']
+        three_months_ago = datetime.today() - timedelta(days=90)
         deleted_count = 0
 
-        for invoice in invoices:
-            old_attachments = attachment_model.search([
-                ('res_model', '=', 'account.move'),
-                ('res_id', '=', invoice.id),
-                ('create_date', '<', three_months_ago),
-            ])
-            deleted_count += len(old_attachments)
-            old_attachments.unlink()
+        old_attachments = self.env['ir.attachment'].search([
+            ('res_model', '=', 'account.move'),
+            ('create_date', '<', three_months_ago)
+        ])
+
+        deleted_count = len(old_attachments)
+        old_attachments.unlink()
 
         _logger = self.env['ir.logging']
         _logger.sudo().create({
